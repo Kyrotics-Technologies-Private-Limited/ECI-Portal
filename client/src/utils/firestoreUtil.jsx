@@ -24,11 +24,11 @@ import {
   deleteObject,
 } from "firebase/storage";
 import { formatDate } from "./formatDate";
-import {parse} from 'date-fns'
-import {server} from '../main'
+import { parse } from "date-fns";
+import { server } from "../main";
 import JSZip from "jszip";
 import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
+// import Docxtemplater from "docxtemplater";
 
 // --- File Operations ---
 
@@ -47,16 +47,7 @@ export const uploadFile = async (projectId, file) => {
     const pageCount = pdfDoc.getPageCount();
     console.log("Page count:", pageCount); // Log the page count
 
-    const htmlFileName = file.name.replace(".pdf", ".html");
-    const htmlBlob = new Blob([""], { type: "text/html" });
-
-    // Upload the HTML file to Firebase Storage
-    const htmlStorageRef = ref(
-      storage,
-      `projects/${projectId}/${htmlFileName}`
-    );
-    const htmlSnapshot = await uploadBytes(htmlStorageRef, htmlBlob);
-    const htmlDownloadURL = await getDownloadURL(htmlSnapshot.ref);
+    // No HTML companion file anymore
 
     // Add file metadata to Firestore
     const fileRef = await addDoc(
@@ -64,7 +55,7 @@ export const uploadFile = async (projectId, file) => {
       {
         name: file.name,
         pdfUrl: pdfDownloadURL,
-        htmlUrl: htmlDownloadURL,
+        // htmlUrl removed
         uploadedDate: formatDate(new Date()),
         status: 0,
         projectId: projectId,
@@ -76,7 +67,7 @@ export const uploadFile = async (projectId, file) => {
       id: fileRef.id,
       name: file.name,
       pdfUrl: pdfDownloadURL,
-      htmlUrl: htmlDownloadURL,
+      // htmlUrl removed
       uploadedDate: formatDate(new Date()),
       status: 0,
       pageCount: pageCount, // Include the number of pages in the return object
@@ -93,12 +84,10 @@ export const deleteFile = async (projectId, fileId, fileName) => {
     const pdfStorageRef = ref(storage, `projects/${projectId}/${fileName}`);
     await deleteObject(pdfStorageRef);
 
-    const htmlFileName = fileName.replace(".pdf", ".html");
-    const htmlStorageRef = ref(
-      storage,
-      `projects/${projectId}/${htmlFileName}`
-    );
-    await deleteObject(htmlStorageRef);
+    // Also delete CSV companion if exists
+    const csvFileName = fileName.replace(/\.pdf$/i, ".csv");
+    const csvStorageRef = ref(storage, `projects/${projectId}/${csvFileName}`);
+    await deleteObject(csvStorageRef).catch(() => {});
 
     const fileRef = doc(db, "projects", projectId, "files", fileId);
     await deleteDoc(fileRef);
@@ -112,69 +101,33 @@ export const deleteFile = async (projectId, fileId, fileName) => {
 
 export const exportFiles = async (projectId, fileId, fileName, format) => {
   try {
-    // Get the PDF and HTML URLs
+    // Get the PDF and CSV URLs
     const pdfUrl = await getDownloadURL(
       ref(storage, `projects/${projectId}/${fileName}`)
     );
-    const htmlFileName = fileName.replace(".pdf", ".html");
-    const htmlUrl = await getDownloadURL(
-      ref(storage, `projects/${projectId}/${htmlFileName}`)
+    const csvFileName = fileName.replace(/\.pdf$/i, ".csv");
+    const csvUrl = await getDownloadURL(
+      ref(storage, `projects/${projectId}/${csvFileName}`)
     );
 
-    const newFileName = fileName.replace(".pdf", `.${format}`);
-    console.log("New File", newFileName);
-
     // Fetch the files
-    const pdfBlob = await fetch(pdfUrl).then((res) => res.blob());
-    const htmlBlob = await fetch(htmlUrl).then((res) => res.text());
+    const [pdfBlob, csvBlob] = await Promise.all([
+      fetch(pdfUrl).then((res) => res.blob()),
+      fetch(csvUrl).then((res) => res.blob()),
+    ]);
 
-    // Log the HTML content for debugging
-    console.log("HTML Content:", htmlBlob);
-
-    let convertedBlob;
-    if (format === "doc") {
-      try {
-        // Convert HTML to DOCX using Docxtemplater
-        const zip = new PizZip();
-        const doc = new Docxtemplater(zip);
-        const htmlContent = `
-          <html>
-            <head>
-              <meta charset="utf-8">
-            </head>
-            <body>
-              ${htmlBlob}
-            </body>
-          </html>
-        `;
-        console.log("HTML Content to DOCX:", htmlContent);
-        doc.loadZip(zip);
-        doc.setData({ html: htmlContent });
-        doc.render();
-        const out = doc.getZip().generate({ type: "blob" });
-        convertedBlob = new Blob([out], {
-          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        });
-      } catch (docError) {
-        console.error("Error converting HTML to DOCX:", docError);
-        throw new Error("Error converting HTML to DOCX");
-      }
-    } else if (format === "pdf") {
-      convertedBlob = new Blob([htmlBlob], { type: "application/pdf" });
-    }
-
-    // Create a zip file
+    // Create a zip file containing original PDF and CSV
     const zip = new JSZip();
     zip.file(`${fileName}`, pdfBlob);
-    zip.file(`${newFileName}`, convertedBlob);
+    zip.file(`${csvFileName}`, csvBlob);
 
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
-    // Create a download link
+    // Trigger download
     const url = URL.createObjectURL(zipBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${fileName}.zip`;
+    a.download = `${fileName.replace(/\.pdf$/i, "")}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -281,10 +234,9 @@ export const fetchDocumentUrl = async (projectId, fileId) => {
     if (!response.ok) {
       throw new Error("Failed to generate signed URL");
     }
-    
 
     const { signedUrl } = await response.json(); // Get the new signed URL from the backend
-    console.log(signedUrl)
+    console.log(signedUrl);
     return {
       pdfUrl: signedUrl, // Return the new signed URL
     };
@@ -293,7 +245,6 @@ export const fetchDocumentUrl = async (projectId, fileId) => {
     throw new Error("Error fetching document URL");
   }
 };
-
 
 // Update the status of a specific file
 // export const updateFileStatus = async (projectId, fileId, status, userId) => {
@@ -400,10 +351,6 @@ export const fetchProjectFilesCount = async (status, projectId) => {
     throw new Error("Error fetching project files count");
   }
 };
-
-
-
-
 
 // --- Project Operations ---
 
@@ -534,7 +481,6 @@ export const fetchProjectDetails = async (companyId) => {
         // const completedFilePageCount = completedFiles.reduce((total, file) => total + (file.pageCount || 0), 0);
 
         return {
-          
           name: project.name,
           totalFiles,
           readyForWorkFiles,
@@ -552,7 +498,6 @@ export const fetchProjectDetails = async (companyId) => {
   }
 };
 
-
 export const fetchClientProjectDetails = async (companyId) => {
   try {
     const projects = await fetchCompanyProjects(companyId);
@@ -566,10 +511,8 @@ export const fetchClientProjectDetails = async (companyId) => {
           (file) => file.status == 5
         ).length;
 
-        const inProgressFiles = files.filter(
-          (file) => file.status == 6
-        ).length;
-       
+        const inProgressFiles = files.filter((file) => file.status == 6).length;
+
         return {
           // id: project.id,
           name: project.name,
@@ -589,11 +532,8 @@ export const fetchClientProjectDetails = async (companyId) => {
   }
 };
 
-
-
 export const fetchDetailedFileReport = async (companyId) => {
   try {
-
     const statusLabel = {
       1: "ML",
       2: "NotStarted",
@@ -609,27 +549,31 @@ export const fetchDetailedFileReport = async (companyId) => {
     const detailedFileReport = await Promise.all(
       projects.map(async (project) => {
         const files = await fetchProjectFiles(project.id);
-        const filteredFiles = files.filter((file) => file.status >= 1)
-        const filesWithAssigneeNames = await Promise.all(filteredFiles.map(async (file) => {
-          const assigneeName = file.kyro_assignedTo ? await fetchUserNameById(file.kyro_assignedTo) : '';
-          return {
-            fileName: file.name,
-            status: statusLabel[file.status],
-            pageCount: file.pageCount,
-            uploadedDate: file.uploadedDate,
-            assignedDate: file.kyro_assignedDate,
-            deliveryDate: file.kyro_deliveredDate,
-            assigneeName,
-            projectName: project.name,
-          };
-        }));
+        const filteredFiles = files.filter((file) => file.status >= 1);
+        const filesWithAssigneeNames = await Promise.all(
+          filteredFiles.map(async (file) => {
+            const assigneeName = file.kyro_assignedTo
+              ? await fetchUserNameById(file.kyro_assignedTo)
+              : "";
+            return {
+              fileName: file.name,
+              status: statusLabel[file.status],
+              pageCount: file.pageCount,
+              uploadedDate: file.uploadedDate,
+              assignedDate: file.kyro_assignedDate,
+              deliveryDate: file.kyro_deliveredDate,
+              assigneeName,
+              projectName: project.name,
+            };
+          })
+        );
         return filesWithAssigneeNames;
       })
     );
     return detailedFileReport.flat();
   } catch (error) {
-    console.error('Error fetching detailed file report:', error);
-    throw new Error('Error fetching detailed file report');
+    console.error("Error fetching detailed file report:", error);
+    throw new Error("Error fetching detailed file report");
   }
 };
 
@@ -639,30 +583,33 @@ export const fetchClientDetailedFileReport = async (companyId) => {
     const detailedFileReport = await Promise.all(
       projects.map(async (project) => {
         const files = await fetchProjectFiles(project.id);
-        const filteredFiles = files.filter((file) => file.status >= 5)
-        const filesWithAssigneeNames = await Promise.all(filteredFiles.map(async (file) => {
-          const assigneeName = file.client_assignedTo ? await fetchUserNameById(file.client_assignedTo) : '';
-          return {
-            fileName: file.name,
-            status: file.status,
-            pageCount: file.pageCount,
-            uploadedDate: file.uploadedDate,
-            assignedDate: file.client_assignedDate,
-            deliveryDate: file.client_downloadedDate,
-            assigneeName,
-            projectName: project.name,
-          };
-        }));
+        const filteredFiles = files.filter((file) => file.status >= 5);
+        const filesWithAssigneeNames = await Promise.all(
+          filteredFiles.map(async (file) => {
+            const assigneeName = file.client_assignedTo
+              ? await fetchUserNameById(file.client_assignedTo)
+              : "";
+            return {
+              fileName: file.name,
+              status: file.status,
+              pageCount: file.pageCount,
+              uploadedDate: file.uploadedDate,
+              assignedDate: file.client_assignedDate,
+              deliveryDate: file.client_downloadedDate,
+              assigneeName,
+              projectName: project.name,
+            };
+          })
+        );
         return filesWithAssigneeNames;
       })
     );
     return detailedFileReport.flat();
   } catch (error) {
-    console.error('Error fetching detailed file report:', error);
-    throw new Error('Error fetching detailed file report');
+    console.error("Error fetching detailed file report:", error);
+    throw new Error("Error fetching detailed file report");
   }
 };
-
 
 export const fetchReportDetails = async (companyId, startDate, endDate) => {
   try {
@@ -673,9 +620,11 @@ export const fetchReportDetails = async (companyId, startDate, endDate) => {
       const files = await fetchProjectFiles(project.id);
 
       const filteredFiles = files.filter((file) => {
-        const deliveredDate = file.kyro_deliveredDate ? parse(file.kyro_deliveredDate, "dd/MM/yyyy", new Date()): null;
+        const deliveredDate = file.kyro_deliveredDate
+          ? parse(file.kyro_deliveredDate, "dd/MM/yyyy", new Date())
+          : null;
         // console.log(deliveredDate);
-        
+
         return deliveredDate >= startDate && deliveredDate <= endDate;
       });
 
@@ -699,7 +648,6 @@ export const fetchReportDetails = async (companyId, startDate, endDate) => {
     throw new Error("Error fetching report details");
   }
 };
-
 
 // --- Company Operations ---
 
@@ -735,9 +683,6 @@ export const fetchCompanyNameByCompanyId = async (companyId) => {
 
 // --- User Operations ---
 
-
-
-
 export const fetchUserReportData = async (companyId) => {
   try {
     // Step 1: Fetch all projects for the company
@@ -757,10 +702,10 @@ export const fetchUserReportData = async (companyId) => {
     const addToGroup = (groupKey, file) => {
       if (!reportData[groupKey]) {
         reportData[groupKey] = {
-          AssignedDate: 'N/A',
+          AssignedDate: "N/A",
           AssignedFiles: 0,
           AssignedPages: 0,
-          CompletedDate: 'N/A',
+          CompletedDate: "N/A",
           CompletedFiles: 0,
           CompletedPages: 0,
         };
@@ -771,7 +716,9 @@ export const fetchUserReportData = async (companyId) => {
         reportData[groupKey].AssignedPages += file.pageCount || 0;
       }
       if (file.kyro_completedDate) {
-        reportData[groupKey].CompletedDate = formatDate(file.kyro_completedDate);
+        reportData[groupKey].CompletedDate = formatDate(
+          file.kyro_completedDate
+        );
         reportData[groupKey].CompletedFiles += 1;
         reportData[groupKey].CompletedPages += file.pageCount || 0;
       }
@@ -779,11 +726,15 @@ export const fetchUserReportData = async (companyId) => {
 
     // Step 3: Iterate over each file and group by date
     allFiles.forEach((file) => {
-      const assignedKey = file.kyro_assignedDate ? formatDate(file.kyro_assignedDate) : null;
-      const completedKey = file.kyro_completedDate ? formatDate(file.kyro_completedDate) : null;
+      const assignedKey = file.kyro_assignedDate
+        ? formatDate(file.kyro_assignedDate)
+        : null;
+      const completedKey = file.kyro_completedDate
+        ? formatDate(file.kyro_completedDate)
+        : null;
 
       // Create group keys
-      const groupKey = `${assignedKey || 'N/A'}-${completedKey || 'N/A'}`;
+      const groupKey = `${assignedKey || "N/A"}-${completedKey || "N/A"}`;
 
       // Add file to the appropriate group
       addToGroup(groupKey, file);
@@ -808,7 +759,6 @@ export const fetchUserReportData = async (companyId) => {
     throw new Error("Error fetching company report data");
   }
 };
-
 
 // Fetch the user's name by their ID
 export const fetchUserNameById = async (userId) => {

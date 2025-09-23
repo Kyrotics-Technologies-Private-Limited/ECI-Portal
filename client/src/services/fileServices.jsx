@@ -15,16 +15,13 @@ import {
   runTransaction,
 } from "firebase/firestore";
 
-import { formatDate,fetchServerTimestamp } from "../utils/formatDate";
+import { formatDate, fetchServerTimestamp } from "../utils/formatDate";
 
 import axios from "axios";
 import { auth } from "../utils/firebase";
 import { server } from "../main";
 
 // --- File Operations ---
-
-
-
 
 async function getIdTokenHeader() {
   const user = auth.currentUser;
@@ -48,7 +45,9 @@ export const uploadFile = async (projectId, file, folderId = null) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to get signed URL: ${response.status} - ${errorText}`);
+      console.error(
+        `Failed to get signed URL: ${response.status} - ${errorText}`
+      );
       throw new Error("Failed to get signed URL");
     }
 
@@ -102,7 +101,6 @@ export const uploadFile = async (projectId, file, folderId = null) => {
   }
 };
 
-
 export const deleteFile = async (projectId, fileId, fileName) => {
   try {
     // Make a request to your backend to delete the file from GCS
@@ -129,11 +127,8 @@ export const deleteFile = async (projectId, fileId, fileName) => {
   }
 };
 
-
-
 export const fetchFileNameById = async (projectId, fileId) => {
   try {
-  
     const fileDocRef = doc(db, "projects", projectId, "files", fileId);
     const fileDoc = await getDoc(fileDocRef);
 
@@ -185,8 +180,7 @@ export const fetchDocumentUrl = async (projectId, fileId) => {
 
     const data = fileDoc.data();
     let fileName = data.name;
-    fileName = fileName.replace(".pdf", "");
-
+    fileName = fileName.replace(/\.pdf$/i, "");
 
     // Step 2: Request new signed URLs from the backend
     const responsePdf = await fetch(`${server}/generateReadSignedUrl`, {
@@ -201,24 +195,26 @@ export const fetchDocumentUrl = async (projectId, fileId) => {
 
     const { signedUrl: pdfSignedUrl } = await responsePdf.json();
 
-    const responseHtml = await fetch(`${server}/generateReadSignedUrl`, {
+    const responseCSV = await fetch(`${server}/generateReadSignedUrl`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, fileName, fileType: "csv" }), // Include fileType to specify it's an HTML file
     });
 
-    if (!responseHtml.ok) {
+    if (!responseCSV.ok) {
       throw new Error("Failed to generate HTML signed URL");
     }
 
-    const { signedUrl: htmlSignedUrl } = await responseHtml.json();
+    const { signedUrl: csvSignedUrl } = await responseCSV.json();
 
-    // console.log("pdfurl", pdfSignedUrl, htmlSignedUrl);
+    console.log("csvurl", csvSignedUrl);
+
+    // console.log("pdfurl", pdfSignedUrl, csvSignedUrl);
 
     // Return both signed URLs
     return {
       pdfUrl: pdfSignedUrl,
-      htmlUrl: htmlSignedUrl,
+      csvUrl: csvSignedUrl,
     };
   } catch (error) {
     console.error("Error fetching document URLs:", error);
@@ -226,22 +222,17 @@ export const fetchDocumentUrl = async (projectId, fileId) => {
   }
 };
 
-
-
-
 export const updateDocumentContent = async (
   projectId,
   fileId,
   newHtmlContent
 ) => {
   try {
-
     // console.log("newContent",newHtmlContent)
 
-    
     // Step 1: Request the signed URL for the update
     const signedUrlResponse = await fetch(
-      `${server}/api/document/generateSignedUrlForHtmlUpdate`,
+      `${server}/api/document/generateSignedUrlForCsvUpdate`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -275,11 +266,8 @@ export const updateDocumentContent = async (
   }
 };
 
-
-
-
-export async function fetchUserWIPCount(){
- const headers = await getIdTokenHeader();
+export async function fetchUserWIPCount() {
+  const headers = await getIdTokenHeader();
   const response = await axios.get(`${server}/api/project/user-wip-count`, {
     headers,
   });
@@ -287,7 +275,6 @@ export async function fetchUserWIPCount(){
   // console.log("WIP count response:", response.data);
   return response.data.count;
 }
-
 
 /**
  * Fetch all "In Progress" files assigned to the current user.
@@ -305,14 +292,13 @@ export async function fetchInProgressFiles() {
  * Fetch all "Completed" files assigned to the current user.
  */
 export async function fetchCompletedFiles() {
- const headers = await getIdTokenHeader();
+  const headers = await getIdTokenHeader();
   const resp = await axios.get(`${server}/api/project/files/completed`, {
     headers,
   });
   // resp.data should be an array of file objects
   return resp.data;
 }
-
 
 export async function fetchClientInProgressFiles() {
   const headers = await getIdTokenHeader();
@@ -337,11 +323,6 @@ export async function fetchClientCompletedFiles() {
   // resp.data should be an array of file objects
   return resp.data;
 }
-
-
-
-
-
 
 /**
  * Fetch user's project‐count metrics (pending/underReview/completed).

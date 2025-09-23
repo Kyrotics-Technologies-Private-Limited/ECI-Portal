@@ -27,6 +27,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.469.0",
     "papaparse": "^5.5.3",
+    "pdf-lib": "^1.17.1",
     "pizzip": "^3.1.7",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",

@@ -341,9 +341,9 @@ const Editor = () => {
     const fetchContent = async () => {
       try {
         setLoading(true);
-        const { htmlUrl, pdfUrl } = await fetchDocumentUrl(projectId, documentId);
+        const { csvUrl, pdfUrl } = await fetchDocumentUrl(projectId, documentId);
         setPdfSrc(pdfUrl);
-        const response = await fetch(htmlUrl);
+        const response = await fetch(csvUrl);
         if (!response.ok) {
           throw new Error(`Failed to fetch CSV: ${response.statusText}`);
         }

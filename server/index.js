@@ -35,7 +35,8 @@ const corsOptions = {
   credentials: true,
 };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+app.use(cors());
 
 // Handle OPTIONS requests for CORS preflight checks
 app.options("*", cors(corsOptions), (req, res) => {
@@ -50,7 +51,7 @@ app.use("/api/project", projectRoutes);
 app.use("/api/document", documentRoutes);
 app.use("/api/folder", folderRoutes);
 app.use("/api/permission", permissionRoutes);
-app.use("/api/track", trackFileRoutes); 
+app.use("/api/track", trackFileRoutes);
 
 app.use(errorMiddleware);
 
@@ -137,32 +138,41 @@ app.post("/generateReadSignedUrl", async (req, res) => {
     let contentType = "";
     if (fileType === "pdf") {
       contentType = "application/pdf";
-    } else if (fileType === "html") {
-      contentType = "text/html";
     } else if (fileType === "csv") {
       contentType = "text/csv";
     } else {
       return res.status(400).json({ error: "Unsupported file type" });
     }
-    const action = contentType === "text/html" ? "read" : "read";
 
-    // Append the correct extension based on the fileType
-    const filePath = `projects/${projectId}/${fileName}.${fileType}`;
     const options = {
       version: "v4",
-      action: action, // Use 'read' for downloading
+      action: "read",
       expires: Date.now() + 15 * 60 * 1000, // 15 minutes expiration
     };
 
-    const [signedUrl] = await storage
-      .bucket(bucketName)
-      .file(filePath)
-      .getSignedUrl(options);
+    // Try multiple case variants for the extension to account for uploads like .PDF
+    const extLower = `.${fileType.toLowerCase()}`;
+    const extUpper = extLower.toUpperCase();
+    const candidatePaths = [
+      `projects/${projectId}/${fileName}${extLower}`,
+      `projects/${projectId}/${fileName}${extUpper}`,
+    ];
 
-    res.json({ signedUrl, filePath });
+    for (const candidatePath of candidatePaths) {
+      const fileRef = storage.bucket(bucketName).file(candidatePath);
+      const [exists] = await fileRef.exists();
+      if (exists) {
+        const [signedUrl] = await fileRef.getSignedUrl(options);
+        // console.log("filePath", candidatePath);
+        // console.log("signedUrl", signedUrl);
+        return res.json({ signedUrl, filePath: candidatePath });
+      }
+    }
+
+    return res.status(404).json({ error: "File not found in storage" });
   } catch (error) {
     console.error("Error generating signed URL:", error);
-    res
+    return res
       .status(500)
       .json({ error: "Failed to generate signed URL for reading" });
   }
