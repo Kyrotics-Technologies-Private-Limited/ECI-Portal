@@ -1,0 +1,36 @@
+runtime: nodejs22
+entrypoint: npm start
+
+env: standard
+
+instance_class : F4
+
+env_variables:
+  NODE_ENV: production
+  GOOGLE_APPLICATION_CREDENTIALS: 'bhasantar-ui-and-llm-key.json'  # Path to your key file
+  GCP_PROJECT_ID: 'bhasantar-ui-and-llm'  # Your Google Cloud project ID
+  GCS_BUCKET_NAME: 'bhasantar'  # Your Cloud Storage bucket name
+
+  FIREBASE_TYPE: "service_account"
+  FIREBASE_PROJECT_ID: "bhasantar-63254"
+  FIREBASE_PRIVATE_KEY_ID: "95dab1ba6b6f878d21aca42278ed7ab97d0cc30f"
+  FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDgSejtQQb2QV8z\n1fcQTXBeglNL11mW6choARg1eo9xrzjbo9JkXK6K3AM6azbXatL66oMYgx3MDqAk\n4jFUVpmUlgb6SmENAvq+bSBKQisCU9W0+GgS65sDxgQmfTxmwmhCPFhFkesOw3UB\nTtnUXGHUU7h399oljS9IDF3PDRkOt8zMs+hZgHm3f96tYMWWeoaRjcRYXpcTM1CH\n4+Hr2oWTs6LuaeOE02VxHr6BPVhFTWGQbryH7C1MMPXWlDIvoCJFVQmWMSWx4CJp\n+u+9dOg2BJD/o6NmIMzP+Ijml3fgwb3/BwB1fZNJt0PU3Fbm2WVO+rg5w8RHhuFv\nK9SvDew9AgMBAAECggEAIgdaACO6tyz25pSYGKXvHl+pMfCuhoTaDjGFp0N8354v\n7bRUDOcPkkDMJUEJVTM/Zv336DBTGoJo41UFb/V4SqtdIVHx7zlHABJAG77LQLNQ\nfABTkJ9PabSm14zDrRbiHj6ClAI4sV46nSQF95VmlazNaDeMpjWJTrtAQP7h5jH4\nLlGKVg4MfgxkrcSV04b2GKPFGUOAUC2k99M6IoH2AU30yfVevxWutSMQjZ2gdcYd\nQ8Zmd84tj3jonItGHImCak+VbWO+ywedXLjEPd4YSvEb56uGLpvflNW0qOoEk8ZK\ns+0WtSDedTp2UXicECes/l+pSPVo2J1qyZLU43+6LwKBgQD+WNhZwzWn6G2h3tQW\nCY6r6L8wEqjdp0iXETIXZU5iUrz27T8khr/aBIFNQLlwp1AZZnO6nfUoA/4h1d2y\nk6KqD5/AUnqlaDvp1ivq7RWHta6jTwzY8PBvTzoVkKHNWxufqMljZoXXy34xWvU1\nNeRWCrVOO+p9d6uCJ7HcxArnEwKBgQDhvw6VDAUyLMPbBtdlFb0LTNlL4IdNPDOS\n/9pfZczHH043L+WRqbdPObY4/dypy1BZ9jr9SpzlELHOjerR0EpoziTB4ecHOt2P\nlBNgUTYdRb1TS3atFhxRG/lZhIjRxxYolAu6ABWYjYOW5CjohfadC89MdjZLZgCx\nqdQg9S25bwKBgQC6i+kqdM1uuD9ogKkm/J2ConNPS/BEmcPY4MjPdgL2hF6J8Nnl\n7VrbCYDYa0dXQ6+w4X6x+dZsIfmLUXOH3VZpyonNofDITlnbGLUfWgH3hh5vMrRm\njNibmw0r8edqWY86G66RVAmIi3yjsGW2QC+Xl8UAe1tx6IqHLJv8ImEotwKBgFpa\ntUR0zjOZ9T5aS6YbAFJgjOywzpbcTKw+mbHrNf5RCmZOVm1p54PfTo8bFNIlHWEU\ni+HLlmacuv44kU8vNkkikVXEzEp5hiqskuDPQICQ5ElNgA+hNO5F6xSoVnbYX4cY\nUmU9GWe45H1ljvYagG21R2CMRAkDp610kwIqAAYjAoGBAKZqNRNQ+UQB0gdZNxy+\ns/FeIpzqsTecM3X1puVMEwBONIntATGRC3WSB1b5DFi6q3TGgG8Df0MizJZqboMi\neDydVt7cGlhIx0IcEQLamACHzVCoImGXjURwn6Iso2E7SJr+HHgZrmxPLLPLT1Hj\nZc8jXbwhC/XgKUxBteNs2WIB\n-----END PRIVATE KEY-----\n"
+  FIREBASE_CLIENT_EMAIL: "firebase-adminsdk-fhqm5@bhasantar-63254.iam.gserviceaccount.com"
+  FIREBASE_CLIENT_ID: "106979737856869329445"
+  FIREBASE_AUTH_URI: "https://accounts.google.com/o/oauth2/auth"
+  FIREBASE_TOKEN_URI: "https://oauth2.googleapis.com/token"
+  FIREBASE_AUTH_PROVIDER_CERT_URL: "https://www.googleapis.com/oauth2/v1/certs"
+  FIREBASE_CLIENT_CERT_URL: "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fhqm5%40bhasantar-63254.iam.gserviceaccount.com"
+  FIREBASE_UNIVERSE_DOMAIN: "googleapis.com"
+
+  PORT: 8080
+  # FRONTEND_URL: http://localhost:5173
+  # FRONTEND_URL: https://frontend-dot-bhasantar-ui-and-llm.as.r.appspot.com
+  FRONTEND_URL: https://frontend-dot-bhasantar-ui-and-llm.as.r.appspot.com
+  # PUPPETEER_EXECUTABLE_PATH: "C:\\"
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+
+
+handlers:
+  - url: /.*
+    script: auto

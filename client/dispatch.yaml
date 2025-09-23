@@ -1,0 +1,5 @@
+dispatch:
+  - url: "bhasantar.com/*"
+    service: frontend
+  - url: "www.bhasantar.com/*"
+    service: frontend

@@ -1,0 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Nirmala+UI&display=swap'); */
+
+@media print {
+  body {
+    margin: 0 !important;
+  }
+  
+  /* Make sure page breaks work correctly when printing */
+  .ql-editor hr.page-break {
+    page-break-before: always;
+    page-break-after: auto;
+    border: none;
+    margin: 0;
+    padding: 0;
+    height: 0;
+  }
+}
+
+/* Editor css */
+#toolbar {
+  display: flex;
+  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+  align-items: center;
+  background-color: #f9fafb; /* Light gray background */
+  border-radius: 0.375rem; /* Rounded corners */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); 
+  padding: 4px; /* Padding around the toolbar */
+  gap: 0.5rem; /* Spacing between items */
+}
+
+.ql-editor {
+  line-height: 1.5 !important; /* The !important ensures it overrides default styles */
+  counter-reset: page-counter;
+}
+
+/* Updated page break styling to look like actual document pages */
+.ql-editor hr.page-break {
+  page-break-before: always;
+  position: relative;
+  height: 20px;
+  margin: 30px 0;
+  border: none;
+  background-color: transparent;
+  display: block;
+  overflow: visible;
+}
+
+/* Paper edge effect */
+.ql-editor hr.page-break:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -20px;
+  right: -20px;
+  height: 1px;
+  background: #ddd;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Page number and shadow effect */
+.ql-editor hr.page-break:after {
+  counter-increment: page-counter;
+  content: "Page " counter(page-counter);
+  position: absolute;
+  bottom: -10px;
+  right: 0;
+  font-size: 10px;
+  color: #999;
+  background: white;
+  padding: 0 5px;
+  border-radius: 2px;
+}
+
+/* Paper shadow and 3D effect */
+.ql-editor .ql-editor > *:not(hr.page-break) + hr.page-break {
+  margin-top: 50px;
+}
+
+/* Page container styling to create paper-like sections */
+.ql-editor .ql-page {
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  margin-bottom: 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 2px;
+  min-height: 11in;
+  position: relative;
+}
+
+.ql-editor sub,
+.ql-editor sup {
+  font-size: 0.75em !important;
+}
+
+.ql-searched-string {
+  background-color: #FFFF00; /* Yellow background */
+  display: inline;
+  border-radius: 2px;
+  padding: 1px 0;
+}
+
+/* Add this class to your quill container when you want to highlight the current match */
+.quill-container-searching .ql-editor .ql-searched-string:nth-of-type(1) {
+  background-color: #FFA500; /* Orange background for current match */
+  border: 1px solid #FF8C00; /* Slightly darker orange border */
+}
+
+/* Optional animation to draw attention to matches */
+@keyframes pulse-highlight {
+  0% { background-color: #FFFF00; }
+  50% { background-color: #FFFFA0; }
+  100% { background-color: #FFFF00; }
+}
+
+.ql-searched-string {
+  animation: pulse-highlight 1.5s ease-in-out 1;
+}
+
+.ql-editor table {
+  max-width: 100%;
+  width: auto;
+  table-layout: auto;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.ql-editor td,
+.ql-editor th {
+  max-width: 200px;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.ql-editor {
+  overflow-x: hidden;
+}
+
+.quill-better-table {
+  border-collapse: collapse !important;
+  width: 100%;
+}
+
+.quill-better-table td {
+  border: 1px solid #000 !important;
+  padding: 8px;
+}
+
+.quill-better-table tr {
+  border: 1px solid #000 !important;
+}
+
+/* .ql-table-menus-container{
+  
+} */
+ /* Style for quill-table-better's operation menu */
+/* Adjust this selector if the module uses a different class */
+.ql-table-menus-container {
+  position: absolute;
+  left: 50% !important; 
+  transform: translateX(-50%) !important; 
+  background-color: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  padding: 5px;
+  display: flex; 
+  gap: 4px;
+}
+
