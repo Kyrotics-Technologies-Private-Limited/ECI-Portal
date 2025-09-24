@@ -3,8 +3,15 @@ const ErrorHandler = require("../utils/errorHandler");
 const { db } = require("../firebaseAdmin");
 const htmlToDocx = require("html-to-docx");
 const { Storage } = require("@google-cloud/storage");
-const storage = new Storage();
-const bucketName = "bhasantar";
+// Initialize GCS client using environment credentials
+const storage = new Storage({
+  projectId: process.env.GCP_PROJECT_ID,
+  credentials: {
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  },
+});
+const bucketName = process.env.GCS_BUCKET_NAME;
 const JSZip = require("jszip");
 const { JSDOM } = require("jsdom"); // Add this at the top of your file
 

@@ -35,7 +35,7 @@ const columns = [
   { id: "completedDate", label: "Completed Date", minWidth: 130 },
   { id: "deliveryDate", label: "Delivery Date", minWidth: 130 },
   { id: "assigneeName", label: "Assignee Name", minWidth: 130 },
-  { id: "projectName", label: "Judgement", minWidth: 130 },
+  { id: "projectName", label: "Documents", minWidth: 130 },
 ];
 
 // const date1 = parse('28/08/2024', 'dd/MM/yyyy', new Date());

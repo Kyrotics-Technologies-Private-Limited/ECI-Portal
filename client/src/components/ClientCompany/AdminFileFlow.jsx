@@ -10,6 +10,7 @@ import TabPanel from "../TabPanel.jsx";
 import {
   fetchProjectFiles,
   fetchProjectName,
+  fetchProjectFilesByFolder,
 } from "../../services/projectServices.jsx";
 import { updateFileStatus } from "../../services/fileServices.jsx";
 import { fetchUserNameById } from "../../utils/auth.jsx";
@@ -60,7 +61,7 @@ const columnsDownloaded = [
   { id: "client_assignedTo", label: "Completed By", minWidth: 150 },
 ];
 
-const AdminFileFlow = ({ projectId, companyId }) => {
+const AdminFileFlow = ({ projectId, companyId, folderId }) => {
   // console.log(companyId)
   const [tabValue, setTabValue] = useState(0);
   const [readyForWorkFiles, setReadyForWorkFiles] = useState([]);
@@ -99,7 +100,9 @@ const AdminFileFlow = ({ projectId, companyId }) => {
       if (!companyId || !projectId) return;
       setIsLoading(true);
       try {
-        const projectFiles = await fetchProjectFiles(projectId);
+        const projectFiles = folderId
+          ? await fetchProjectFilesByFolder(projectId, folderId)
+          : await fetchProjectFiles(projectId);
         const projectName = await fetchProjectName(projectId);
 
         const fetchFileUsers = async (files) => {
@@ -154,7 +157,7 @@ const AdminFileFlow = ({ projectId, companyId }) => {
     };
 
     getFiles();
-  }, [companyId, projectId]);
+  }, [companyId, projectId, folderId]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -239,14 +242,11 @@ const AdminFileFlow = ({ projectId, companyId }) => {
     }
   };
 
-  const handleDownload = async (projectId, documentId, format) => {
+  const handleDownload = async (projectId, documentId) => {
     setError(null);
 
     try {
-      let endpoint = `${server}/api/document/${projectId}/${documentId}/downloadPdf`;
-      if (format === "word") {
-        endpoint = `${server}/api/document/${projectId}/${documentId}/downloadDocx`;
-      }
+      const endpoint = `${server}/api/document/${projectId}/${documentId}/downloadPdf`;
 
       // Use toast.promise to handle the download process
       await toast.promise(

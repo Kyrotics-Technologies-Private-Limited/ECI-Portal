@@ -75,7 +75,7 @@ export default function Sidebar({ companyId, role }) {
                   }`}
               >
                 <FolderCopyIcon className="mr-5" />
-                Judgements
+                Documents
               </Link>
             </li>
             {role === "user" && (

@@ -85,7 +85,7 @@ export default function KyroSidebar({ companyId, role }) {
                   }`}
               >
                 <FolderCopyIcon className="mr-5" />
-                Judgements
+                Documents
               </Link>
             </li>
 

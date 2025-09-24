@@ -203,9 +203,10 @@ const Editor = () => {
         type: "text/csv; charset=utf-8",
       });
 
-      await updateDocumentContent(projectId, documentId, blob);
+      const savedCsvPath = await updateDocumentContent(projectId, documentId, blob);
       setHasUnsavedChanges(false);
       localStorage.removeItem(`editor_backup_${documentId}`);
+      return savedCsvPath;
     } catch (err) {
       console.error("Error saving document:", err);
       const csvContent = convertToCSV(rowData, columnDefs);
@@ -431,7 +432,7 @@ const Editor = () => {
   }, [projectId, documentId]);
 
   const handleSave = async () => {
-    await saveContent();
+    const savedCsvPath = await saveContent();
     if (hasUnsavedChanges && isOnline) {
       toast.error("Please ensure changes are saved before submitting.");
       return;
@@ -451,7 +452,7 @@ const Editor = () => {
         userId: user?.uid,
         userName: user?.displayName || user?.name|| user?.email || "Unknown",
         fileName: fileName || "Document",
-        fileUrl: "",
+        fileUrl: savedCsvPath || "",
         companyId,
       });
       if (companyId === kyroId) {

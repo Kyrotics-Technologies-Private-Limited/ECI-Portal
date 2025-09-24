@@ -225,11 +225,9 @@ export const fetchDocumentUrl = async (projectId, fileId) => {
 export const updateDocumentContent = async (
   projectId,
   fileId,
-  newHtmlContent
+  newCsvBlob
 ) => {
   try {
-    // console.log("newContent",newHtmlContent)
-
     // Step 1: Request the signed URL for the update
     const signedUrlResponse = await fetch(
       `${server}/api/document/generateSignedUrlForCsvUpdate`,
@@ -245,7 +243,6 @@ export const updateDocumentContent = async (
     }
 
     const { signedUrl, gcsFilePath } = await signedUrlResponse.json();
-    // console.log("signedurl", signedUrl);
 
     // Step 2: Upload the new CSV content to the signed URL
     const uploadResponse = await fetch(signedUrl, {
@@ -253,16 +250,18 @@ export const updateDocumentContent = async (
       headers: {
         "Content-Type": "text/csv",
       },
-      body: newHtmlContent, // The CSV content to be updated
+      body: newCsvBlob, // The CSV content to be updated
     });
 
     if (!uploadResponse.ok) {
       throw new Error("Failed to upload new CSV content");
     }
 
-    // console.log("CSV content updated successfully at:", gcsFilePath);
+    // Return the canonical path where the CSV was saved
+    return gcsFilePath;
   } catch (error) {
     console.error("Error updating CSV content:", error);
+    throw error;
   }
 };
 

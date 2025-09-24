@@ -11,8 +11,6 @@ import Paper from "@mui/material/Paper";
 import MuiTable from "@mui/material/Table";
 import Checkbox from "@mui/material/Checkbox";
 import DownloadIcon from "@mui/icons-material/Download";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 
 
 function CompletedTable({
@@ -30,9 +28,7 @@ function CompletedTable({
   projectId,
   status,
 }) {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [currentFile, setCurrentFile] = useState(null);
-  const [selectedAnchorEl, setSelectedAnchorEl] = useState(null);
+  // no need to track a current file for immediate download
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" }); // Sort config state
 
   // Handle sorting logic
@@ -66,35 +62,7 @@ function CompletedTable({
     }
   };
 
-  const handleMenuOpen = (event, file) => {
-    setAnchorEl(event.currentTarget);
-    setCurrentFile(file);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setCurrentFile(null);
-  };
-
-  const handleSelectedMenuOpen = (event) => {
-    setSelectedAnchorEl(event.currentTarget);
-  };
-
-  const handleSelectedMenuClose = () => {
-    setSelectedAnchorEl(null);
-  };
-
-  const handleDownloadClick = (format) => {
-    if (currentFile) {
-      handleDownload(currentFile.projectId, currentFile.id, format);
-    }
-    handleMenuClose();
-  };
-
-  const handleDownloadSelectedClick = (format) => {
-    handleDownloadSelected(format);
-    handleSelectedMenuClose();
-  };
+  // per-file download handled inline in button click
 
   const calculateTotalPages = (rows) => {
     return rows.reduce((total, row) => {
@@ -112,24 +80,12 @@ function CompletedTable({
           <Button
             variant="contained"
             color="primary"
-            onClick={handleSelectedMenuOpen}
+            onClick={() => handleDownloadSelected()}
             disabled={selectedRows.length === 0}
           >
             <DownloadIcon className="text-white text-lg mx-1" />
             Download Selected
           </Button>
-          <Menu
-            anchorEl={selectedAnchorEl}
-            open={Boolean(selectedAnchorEl)}
-            onClose={handleSelectedMenuClose}
-          >
-            <MenuItem onClick={() => handleDownloadSelectedClick("pdf")}>
-              Download as PDF
-            </MenuItem>
-            <MenuItem onClick={() => handleDownloadSelectedClick("word")}>
-              Download as Word
-            </MenuItem>
-          </Menu>
         </div>
       </div>
       <Paper sx={{ width: "100%", overflow: "hidden" }}>
@@ -195,26 +151,10 @@ function CompletedTable({
                               <Button
                                 variant="contained"
                                 color="primary"
-                                onClick={(event) => handleMenuOpen(event, row)}
+                                onClick={() => handleDownload(row.projectId, row.id)}
                               >
-                                Download
+                                Download Zip
                               </Button>
-                              <Menu
-                                anchorEl={anchorEl}
-                                open={Boolean(anchorEl)}
-                                onClose={handleMenuClose}
-                              >
-                                <MenuItem
-                                  onClick={() => handleDownloadClick("pdf")}
-                                >
-                                  PDF
-                                </MenuItem>
-                                <MenuItem
-                                  onClick={() => handleDownloadClick("word")}
-                                >
-                                  Word
-                                </MenuItem>
-                              </Menu>
                             </div>
                           ) : (
                             value

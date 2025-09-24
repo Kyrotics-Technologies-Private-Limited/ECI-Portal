@@ -178,7 +178,7 @@ const AdminHome = ({ companyId, role }) => {
                           <ContentPasteSearchIcon sx={{ fontSize: "35px" }} />
                         </div>
                         <h1 className="p-4 text-2xl font-bold font-mono tracking-wider leading-6">
-                          PROJECT OVERVIEW
+                          DOCUMENTS OVERVIEW
                         </h1>
                       </div>
                       <div className="mt-4 my-auto">
@@ -203,7 +203,7 @@ const AdminHome = ({ companyId, role }) => {
                                 Sl No
                               </th>
                               <th className="whitespace-nowrap px-6 py-2 font-medium">
-                                Judgements
+                                Documents
                               </th>
                               <th className="whitespace-nowrap px-6 py-2 font-medium">
                                 Total Files

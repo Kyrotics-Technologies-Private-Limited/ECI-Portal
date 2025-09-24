@@ -7,8 +7,18 @@ const archiver = require("archiver");
 const { fetchDocumentAndCreateZip } = require("../middleware/createZip");
 const { Storage } = require("@google-cloud/storage");
 const admin = require("firebase-admin");
-const storage = new Storage();
-const bucketName = "bhasantar";
+
+// Initialize GCS client using environment-based credentials (consistent with server/index.js)
+const storage = new Storage({
+  projectId: process.env.GCP_PROJECT_ID,
+  credentials: {
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  },
+});
+
+// Use the configured bucket name from environment
+const bucketName = process.env.GCS_BUCKET_NAME;
 const bucket = storage.bucket(bucketName);
 
 //  get all documents for a specific project (company)
@@ -265,90 +275,89 @@ exports.downloadCsv = async (req, res, next) => {
   const { projectId, documentId } = req.params;
 
   try {
-    const { convertedFileBuffer, convertedFileName } =
+    // Fetch CSV buffer and names
+    const { convertedFileBuffer, convertedFileName, originalFileName } =
       await fetchDocumentAndCreateZip(projectId, documentId);
 
-    // Set headers for CSV download
-    res.setHeader("Content-Type", "text/csv");
+    // Compute PDF path and signed URL
+    const pdfFilePath = `projects/${projectId}/${originalFileName}`;
+    const bucket = storage.bucket(bucketName);
+    const [pdfSignedUrl] = await bucket.file(pdfFilePath).getSignedUrl({
+      version: "v4",
+      action: "read",
+      expires: Date.now() + 15 * 60 * 1000,
+    });
+
+    // Prepare ZIP response containing both CSV and original PDF
+    res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${convertedFileName}"`
+      `attachment; filename="${originalFileName.replace(/\.pdf$/i, '')}.zip"`
     );
 
-    // Send the CSV file directly
-    res.send(convertedFileBuffer);
+    const archive = archiver("zip", { zlib: { level: 2 } });
+    archive.on("error", (err) => {
+      console.error("Error creating archive:", err);
+      next(new ErrorHandler("Error creating ZIP archive.", 500));
+    });
+    archive.pipe(res);
+
+    // Add CSV
+    archive.append(convertedFileBuffer, { name: convertedFileName });
+
+    // Fetch and add original PDF
+    const pdfResponse = await axios.get(pdfSignedUrl, { responseType: "stream" });
+    archive.append(pdfResponse.data, { name: originalFileName });
+
+    await archive.finalize();
   } catch (error) {
-    console.error("Error downloading CSV document:", error);
+    console.error("Error downloading CSV+PDF zip:", error);
     next(error);
   }
 };
 
-// Download PDF with original PDF included in the ZIP
+// Download ZIP containing both CSV and original PDF
 exports.downloadPdf = async (req, res, next) => {
   const { projectId, documentId } = req.params;
 
   try {
-    const { convertedFileBuffer, convertedFileName, pdfFilePath, name } =
-      await fetchDocumentAndCreateZip(projectId, documentId, "pdf");
-
-    // Debugging: Check if the buffer is valid
-    if (!convertedFileBuffer || !Buffer.isBuffer(convertedFileBuffer)) {
-      console.log("Invalid or non-buffer PDF content detected.");
-      return next(new ErrorHandler("Converted PDF Buffer is invalid.", 400));
-    }
-
-    // console.log("Proceeding with ZIP creation.");
-    // console.log("Converted PDF Buffer size:", convertedFileBuffer.length);
+    // Get CSV buffer/name and original PDF name
+    const { convertedFileBuffer, convertedFileName, originalFileName } =
+      await fetchDocumentAndCreateZip(projectId, documentId);
 
     const bucket = storage.bucket(bucketName);
+    const pdfFilePath = `projects/${projectId}/${originalFileName}`;
 
-    // Generate a signed URL for the original PDF file
+    // Generate signed URL for original PDF
     const [pdfSignedUrl] = await bucket.file(pdfFilePath).getSignedUrl({
       version: "v4",
       action: "read",
-      expires: Date.now() + 15 * 60 * 1000, // 15 minutes expiration
+      expires: Date.now() + 15 * 60 * 1000,
     });
 
-    // Ensure the signed URL exists
-    if (!pdfSignedUrl) {
-      return next(new ErrorHandler("Could not generate signed URL.", 500));
-    }
-
-    // Set headers for zip download
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${name.replace(".pdf", "")}.zip"`
+      `attachment; filename="${originalFileName.replace(/\.pdf$/i, "")}.zip"`
     );
 
-    // Create a ZIP archive
-    const archive = archiver("zip", { zlib: { level: 0 } }); // No compression for binary data
+    const archive = archiver("zip", { zlib: { level: 2 } });
     archive.on("error", (err) => {
       console.error("Archive creation failed:", err);
       return next(new ErrorHandler("Archive creation failed.", 500));
     });
-
     archive.pipe(res);
 
-    // Add converted PDF file to the zip
-    // console.log("Appending converted PDF buffer to the ZIP archive.");
+    // Add CSV
     archive.append(convertedFileBuffer, { name: convertedFileName });
 
-    // Fetch and add original PDF using the signed URL
-    try {
-      const pdfResponse = await axios.get(pdfSignedUrl, {
-        responseType: "stream",
-      });
-      archive.append(pdfResponse.data, { name });
-    } catch (err) {
-      console.error("Error fetching original PDF:", err);
-      return next(new ErrorHandler("Could not fetch original PDF.", 404));
-    }
+    // Fetch and add original PDF
+    const pdfResponse = await axios.get(pdfSignedUrl, { responseType: "stream" });
+    archive.append(pdfResponse.data, { name: originalFileName });
 
-    // Finalize the zip
     await archive.finalize();
   } catch (error) {
-    console.error("Error exporting PDF document:", error);
+    console.error("Error exporting ZIP (PDF+CSV):", error);
     return next(new ErrorHandler(error));
   }
 };
@@ -374,32 +383,29 @@ exports.downloadSelectedFiles = async (req, res, next) => {
 
     archive.pipe(res);
 
-    // Loop through document IDs and add their PDF and DOCX to individual folders
+    // Loop through document IDs and add their PDF and CSV to individual folders
     for (const documentId of documentIds) {
-      // Fetch the document and create the DOCX
-      const { convertedFileBuffer, convertedFileName, pdfFilePath, name } =
-        await fetchDocumentAndCreateZip(projectId, documentId, "docx");
+      // Fetch CSV buffer and names for this document
+      const { convertedFileBuffer, convertedFileName, originalFileName } =
+        await fetchDocumentAndCreateZip(projectId, documentId);
 
       const bucket = storage.bucket(bucketName);
 
       // Generate a signed URL for the original PDF
-      const [pdfSignedUrl] = await bucket.file(pdfFilePath).getSignedUrl({
+      const pdfPath = `projects/${projectId}/${originalFileName}`;
+      const [pdfSignedUrl] = await bucket.file(pdfPath).getSignedUrl({
         version: "v4",
         action: "read",
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutes expiration
+        expires: Date.now() + 15 * 60 * 1000,
       });
 
       // Create a folder in the ZIP for this file
-      const folderName = name.replace(".pdf", "");
-      archive.append(convertedFileBuffer, {
-        name: `${folderName}/${convertedFileName}`,
-      });
+      const folderName = originalFileName.replace(/\.pdf$/i, "");
+      archive.append(convertedFileBuffer, { name: `${folderName}/${convertedFileName}` });
 
       // Fetch and add original PDF to the same folder
-      const pdfResponse = await axios.get(pdfSignedUrl, {
-        responseType: "stream",
-      });
-      archive.append(pdfResponse.data, { name: `${folderName}/${name}` });
+      const pdfResponse = await axios.get(pdfSignedUrl, { responseType: "stream" });
+      archive.append(pdfResponse.data, { name: `${folderName}/${originalFileName}` });
     }
 
     // Finalize the zip
