@@ -48,9 +48,11 @@ export default function Sidebar({ companyId, role }) {
           } md:translate-x-0 fixed md:relative w-64 h-full z-10`}
       >
         <div className="px-4 py-6">
-          <div className="flex justify-center mb-6">
+          {/* <div className="flex justify-center mb-6">
             <img src={logo} alt="Logo" className="h-20 w-auto" />
-          </div>
+          </div> */}
+
+          <div className="flex justify-center pt-6 text-2xl font-bold text-indigo-600">ECI-PORTAL </div>
           <ul className="mt-16 space-y-3">
             <li>
               <Link

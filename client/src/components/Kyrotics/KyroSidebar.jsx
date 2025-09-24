@@ -47,9 +47,10 @@ export default function KyroSidebar({ companyId, role }) {
           } md:translate-x-0 fixed md:relative w-64 h-full z-10`}
       >
         <div className="py-6 px-4">
-          <div className="flex justify-center mb-6">
+          {/* <div className="flex justify-center mb-6">
             <img src={logo} alt="Logo" className="h-20 w-auto" />
-          </div>
+          </div> */}
+          <div className="flex justify-center pt-6 text-2xl font-bold text-indigo-600">ECI-PORTAL </div>
           <ul className="mt-12 space-y-3  ">
             <li>
               <Link

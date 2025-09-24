@@ -87,11 +87,13 @@ const Login = () => {
       <div className="w-full px-4 py-12 sm:px-6 sm:py-16 lg:w-1/2 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-lg text-center">
           <div className="hidden sm:mb-1 sm:flex sm:justify-center">
-            <div className="">
+            {/* <div className="">
               <a href="#" className="font-bold text-3xl text-indigo-600">
                 <img src="/logo.png" alt="Bhashantaar Logo" style={{ height: '16rem', width: 'auto' }} />
               </a>
-            </div>
+            </div> */}
+
+          <div className="flex justify-center pt-6 text-2xl font-bold text-indigo-600">ECI-PORTAL </div>
           </div>
           <h2 className="mt-7 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Sign in to your account
