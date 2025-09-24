@@ -15,6 +15,7 @@ dist-ssr
 *.local
 config.env
 eci-portal-473011-firebase-adminsdk-fbsvc-81fac60740.json
+eci-portal-473011-firebase-adminsdk-fbsvc-c562e53363.json
 
 # Editor directories and files
 .vscode/*

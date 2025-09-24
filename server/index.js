@@ -56,8 +56,11 @@ app.use("/api/track", trackFileRoutes);
 app.use(errorMiddleware);
 
 const storage = new Storage({
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   projectId: process.env.GCP_PROJECT_ID,
+  credentials: {
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  },
 });
 const bucketName = process.env.GCS_BUCKET_NAME;
 // console.log(bucketName)
