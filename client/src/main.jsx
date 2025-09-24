@@ -4,8 +4,8 @@ import App from './App.jsx'
 import './index.css'
 
 
-// export const server='https://bhasantar-ui-and-llm.as.r.appspot.com'
-export const server = 'http://localhost:5566'
+export const server='https://eci-portal.onrender.com'
+// export const server = 'http://localhost:5566'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
