@@ -298,9 +298,51 @@ const Editor = () => {
     });
   };
 
-  const parseCSV = (csvText) => {
+  // Determine the best delimiter by testing common candidates and picking the most consistent parse
+  const determineDelimiter = (text) => {
+    const candidates = [',', ';', '\t', '|'];
+    let best = { delimiter: ',', score: -1 };
+    for (const d of candidates) {
+      try {
+        const parsed = Papa.parse(text, {
+          delimiter: d,
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: 'greedy',
+          transformHeader: (h) => h.trim(),
+          preview: 50,
+        });
+        const fields = parsed.meta?.fields || [];
+        if (fields.length <= 1) continue;
+        const rows = parsed.data || [];
+        const consistentRows = rows.slice(0, 50).filter((r) => Object.keys(r).length === fields.length).length;
+        const score = fields.length * 10 + consistentRows;
+        if (score > best.score) best = { delimiter: d, score };
+      } catch (e) {
+        // ignore
+      }
+    }
+    if (best.score >= 0) return best.delimiter;
+    // fallback to Papa's auto
+    const auto = Papa.parse(text, {
+      delimiter: '',
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: 'greedy',
+      transformHeader: (h) => h.trim(),
+      preview: 50,
+    });
+    const autoFields = auto.meta?.fields || [];
+    if (autoFields.length > 1) return auto.meta?.delimiter || ',';
+    return ',';
+  };
+
+  const parseCSV = (csvText, overrideDelimiter) => {
+    const effectiveDelimiter = overrideDelimiter
+      ? overrideDelimiter
+      : (csvDelimiter === 'auto' ? '' : csvDelimiter);
     const result = Papa.parse(csvText, {
-      delimiter: csvDelimiter === 'auto' ? '' : csvDelimiter,
+      delimiter: effectiveDelimiter,
       header: true,
       dynamicTyping: true,
       skipEmptyLines: 'greedy',
@@ -380,7 +422,12 @@ const Editor = () => {
         }
         const text = await response.text();
         originalCsvRef.current = text;
-        const { headers, data } = parseCSV(text);
+        // Improve auto-detection for hosted environments: pick the most consistent delimiter
+        const detected = determineDelimiter(text);
+        if (csvDelimiter === 'auto') {
+          setCsvDelimiter(detected);
+        }
+        const { headers, data } = parseCSV(text, detected);
         setColumnDefs(headers);
         setRowData(data);
       } catch (err) {
