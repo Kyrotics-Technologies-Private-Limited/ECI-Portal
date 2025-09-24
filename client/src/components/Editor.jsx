@@ -262,6 +262,41 @@ const Editor = () => {
       checkForLocalBackup();
   }, [documentId]);
 
+  // Build column definitions that support headers containing dots by using colId/valueGetter/valueSetter
+  const buildColumnDefs = (fields, sampleRows) => {
+    return (fields || []).map((fieldName) => {
+      const sampleValue = (sampleRows || []).find(
+        (r) => r[fieldName] !== '' && r[fieldName] !== undefined && r[fieldName] !== null
+      )?.[fieldName];
+      const isNumber = typeof sampleValue === 'number';
+
+      const hasDot = typeof fieldName === 'string' && fieldName.includes('.');
+      const baseDef = {
+        headerName: fieldName,
+        filter: true,
+      };
+
+      const parsedDef = isNumber
+        ? { valueParser: (p) => Number(p.newValue), cellClass: 'ag-right-aligned-cell' }
+        : {};
+
+      if (hasDot) {
+        return {
+          ...baseDef,
+          ...parsedDef,
+          colId: fieldName,
+          valueGetter: (params) => (params.data ? params.data[fieldName] : undefined),
+          valueSetter: (params) => {
+            if (!params.data) return false;
+            params.data[fieldName] = params.newValue;
+            return true;
+          },
+        };
+      }
+      return { ...baseDef, ...parsedDef, field: fieldName };
+    });
+  };
+
   const parseCSV = (csvText) => {
     const result = Papa.parse(csvText, {
       delimiter: csvDelimiter === 'auto' ? '' : csvDelimiter,
@@ -273,22 +308,14 @@ const Editor = () => {
     if (result.errors && result.errors.length) {
       console.warn('Papa parse errors:', result.errors.slice(0, 3));
     }
-    const fields = result.meta?.fields || [];
-    const headers = fields.map((f) => ({ field: f, headerName: f, filter: true }))
-      || Object.keys((result.data && result.data[0]) || {}).map((f) => ({ field: f, headerName: f, filter: true }));
+    const fields = result.meta?.fields || Object.keys((result.data && result.data[0]) || {});
+    const headers = buildColumnDefs(fields, result.data || []);
     const data = result.data || [];
-    const typedHeaders = headers.map(h => {
-      const sample = data.find(r => r[h.field] !== '' && r[h.field] !== undefined && r[h.field] !== null)?.[h.field];
-      const isNumber = typeof sample === 'number';
-      return isNumber
-        ? { ...h, valueParser: (p) => Number(p.newValue), cellClass: 'ag-right-aligned-cell' }
-        : h;
-    });
-    return { headers: typedHeaders, data };
+    return { headers, data };
   };
 
   const convertToCSV = (rowData, columnDefs) => {
-    const fields = columnDefs.map((c) => c.field);
+    const fields = columnDefs.map((c) => c.colId || c.field || c.headerName);
     return Papa.unparse(rowData, {
       columns: fields,
       delimiter: csvDelimiter === 'auto' ? ',' : csvDelimiter,
@@ -321,7 +348,10 @@ const Editor = () => {
   };
 
   const addRow = () => {
-    const blankRow = columnDefs.reduce((acc, col) => ({ ...acc, [col.field]: '' }), {});
+    const blankRow = columnDefs.reduce((acc, col) => {
+      const key = col.colId || col.field || col.headerName;
+      return { ...acc, [key]: '' };
+    }, {});
     pushHistory(rowData);
     setRowData((prev) => [...prev, blankRow]);
     setHasUnsavedChanges(true);
@@ -582,17 +612,17 @@ const Editor = () => {
                 setCsvDelimiter(d);
                 // Re-parse using the original CSV with the new delimiter
                 try {
-                  const { headers, data } = Papa.parse(originalCsvRef.current, {
+                  const result = Papa.parse(originalCsvRef.current, {
                     delimiter: d === 'auto' ? '' : d,
                     header: true,
                     dynamicTyping: true,
                     skipEmptyLines: 'greedy',
                     transformHeader: (h) => h.trim(),
                   });
-                  const fields = data?.meta?.fields || headers?.meta?.fields || [];
-                  const headerDefs = (fields.length ? fields : Object.keys((data && data[0]) || {})).map((f) => ({ field: f, headerName: f, filter: true }));
+                  const fields = result.meta?.fields || Object.keys((result.data && result.data[0]) || {});
+                  const headerDefs = buildColumnDefs(fields, result.data || []);
                   setColumnDefs(headerDefs);
-                  setRowData(data?.data || data || []);
+                  setRowData(result.data || []);
                 } catch (err) {
                   console.error('Delimiter reparse failed', err);
                 }

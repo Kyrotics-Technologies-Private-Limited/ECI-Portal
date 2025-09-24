@@ -10,6 +10,7 @@ import {
 import {
   fetchProjectName,
   fetchProjectFiles,
+  fetchProjectFilesByFolder,
 } from "../../services/projectServices";
 import { updateFileStatus } from "../../services/fileServices";
 import { useAuth } from "../../context/AuthContext";
@@ -63,7 +64,7 @@ const columnsQA = [
   { id: "kyro_assignedToName", label: "Completed By", minWidth: 150 },
 ];
 
-const KyroAdminFileFlow = ({ projectId, companyId }) => {
+const KyroAdminFileFlow = ({ projectId, companyId, folderId }) => {
   // const { projectId,companyId } = useParams();
     console.log('projectId ',projectId)
   
@@ -105,7 +106,9 @@ const KyroAdminFileFlow = ({ projectId, companyId }) => {
     if (!companyId || !projectId) return;
     setIsLoading(true);
     try {
-      const projectFiles = await fetchProjectFiles(projectId);
+      const projectFiles = folderId
+        ? await fetchProjectFilesByFolder(projectId, folderId)
+        : await fetchProjectFiles(projectId);
       const projectName = await fetchProjectName(projectId);
 
       const fetchFileUsers = async (files) => {
@@ -166,7 +169,7 @@ const KyroAdminFileFlow = ({ projectId, companyId }) => {
   };
   useEffect(() => {
     getFiles();
-  }, [companyId, projectId, tabValue]);
+  }, [companyId, projectId, folderId, tabValue]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);

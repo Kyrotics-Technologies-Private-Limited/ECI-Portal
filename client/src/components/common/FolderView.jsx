@@ -106,7 +106,7 @@ const FolderView = ({ project, onBack }) => {
 
   const getFileFlowComponent = () => {
     const { roleName } = currentUser || {};
-    const commonProps = { companyId, projectId: project.id };
+    const commonProps = { companyId, projectId: project.id, folderId: currentFolder?.id };
     
     // For superAdmin, use instance type to determine component
     if (roleName === 'superAdmin') {
