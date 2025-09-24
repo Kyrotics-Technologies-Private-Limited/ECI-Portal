@@ -93,7 +93,7 @@ const Login = () => {
               </a>
             </div> */}
 
-          <div className="flex justify-center pt-6 text-2xl font-bold text-indigo-600">ECI-PORTAL </div>
+          <div className="flex justify-center pt-6 text-2xl font-bold text-indigo-600">DMS-PORTAL </div>
           </div>
           <h2 className="mt-7 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
             Sign in to your account
